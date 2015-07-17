@@ -32,8 +32,6 @@ namespace NewsParser
         {
             private List<string> mSymbols = new List<string>();
             private List<string> mNews = new List<string>();
-            private string mVolatile;
-            private List<string> mNewsTime = new List<string>();
             public Filter()
             {
                 // Emptry constructor
@@ -62,27 +60,19 @@ namespace NewsParser
             {
                 mSymbols.Remove(symbol);
             }
-            public void setNewsTime(string time, string news)
-            {
-                mNewsTime.Add(time + ";" + news);
-            }
-            public List<string> getNewsTime()
-            {
-                return mNewsTime;
-            }
 
         }
         class Parser
         {
             private Filter mFilter;
-            private string mItemBeginBlock = "<tr id=\"eventRowId_";
-            private string mNewsTimeBeginBlock = "first left time";
-            private string mSymbolBeginBlock = "left flagCur noWrap";
-            private string mVolatileBeginBlock = "left textNum sentiment";
-            private string mNewsBeginBlock = "left event";
-            private string mActualBeginBlock = "bold act";
-            private string mForecastBeginBlock = "fore event";
-            private string mPreviousBeginBlock = "prev black";
+            private string mItemPattern = "<tr id=\"eventRowId.+?</tr>";
+            private string mNewsTimePattern = "<td class=\"first left time.+?</td>";
+            private string mSymbolPattern = "<td class=\"left flagCur noWrap.+?</td>";
+            private string mVolatilePattern = "<td class=\"left textNum sentiment.+?</td>";
+            private string mNewsPattern = "<td class=\"left event.+?</td>";
+            private string mActualPattern = "<td class=\"bold act.+?</td>";
+            private string mForecastPattern = "<td class=\"fore event.+?</td>";
+            private string mPreviousPattern = "<td class=\"prev blackFont.+?</td>";
             public Parser(Filter filter)
             {
                 if (filter != null)
@@ -100,66 +90,65 @@ namespace NewsParser
                 // write parse this
                 string response = getHTMLresponse();
                 //System.IO.File.WriteAllText(@"E:\test.txt", response);
-                List<string> blocks = new List<string>();
-                string block = "";
-                int j = 0;
-                for (int i = 0; i < response.Length;)
+                RegexOptions regOptions = RegexOptions.Singleline;
+                Regex itemRegex = new Regex(mItemPattern,regOptions);
+                Regex newsTimeRegex = new Regex(mNewsTimePattern,regOptions);
+                Regex symbolRegex = new Regex(mSymbolPattern,regOptions);
+                Regex volatileRegex = new Regex(mVolatilePattern,regOptions);
+                Regex newsRegex = new Regex(mNewsPattern,regOptions);
+                Regex actualRegex = new Regex(mActualPattern, regOptions);
+                Regex forecastRegex = new Regex(mForecastPattern, regOptions);
+                Regex previousRegex = new Regex(mPreviousPattern, regOptions);
+                MatchCollection items = itemRegex.Matches(response);
+                foreach(Match item in items)
                 {
-                    i = response.IndexOf(mItemBeginBlock, i);
-                    if (i < 0) break;
-                    j = response.IndexOf("</tr>", i);      
-                    block = response.Substring(i, j - i);
-                    blocks.Add(block);
-                    i = j;
-                } // Разбили страницу на блоки <tr> с событиями
-                ParserItem parserItem = new ParserItem();
-                string tempString = "";
-                string currentNews = "";
-                foreach(string item in blocks)
-                {
-                    int i = 0;
-                    i = item.IndexOf(mNewsBeginBlock);
-                    if (i > 0)
+                    ParserItem parserItem = new ParserItem();
+                    if (newsTimeRegex.IsMatch(item.Value))
                     {
-                        Console.WriteLine("tt1");
-                        i = item.IndexOf(">", i) + 1;
-                        i = item.IndexOf(">", i) + 1;
-                        currentNews = item.Substring(i, item.IndexOf("</", i) - i);
+                        parserItem.time = newsTimeRegex.Match(item.Value).Value;
                     }
-                    i = item.IndexOf(mNewsTimeBeginBlock);
-                    if (i > 0)
+                    if (symbolRegex.IsMatch(item.Value))
                     {
-                        Console.WriteLine("tt11");
-                        i = item.IndexOf(">", i) + 1;
-                        tempString = item.Substring(i, item.IndexOf("</", i) - i);
-                        mFilter.setNewsTime(tempString, currentNews);
-                        parserItem.news = currentNews;
-                        parserItem.time = tempString;
+                        parserItem.symbol = symbolRegex.Match(item.Value).Value;
                     }
-                    i = item.IndexOf(mSymbolBeginBlock);
-                    if (i > 0)
+                    if (volatileRegex.IsMatch(item.Value))
                     {
-                        Console.WriteLine("tt2");
-                        i = item.IndexOf(">", i) + 1;
-                        i = item.IndexOf(">", i) + 1;
-                        i = item.IndexOf(">", i) + 1;
-                        parserItem.symbol = item.Substring(i, item.IndexOf("<", i) - i);             
+                        parserItem.volatiled = volatileRegex.Match(item.Value).Value;
                     }
-                    i = item.IndexOf(mVolatileBeginBlock);
-                    if (i > 0)
+                    if (newsRegex.IsMatch(item.Value))
                     {
-                        Console.WriteLine("tt3");
-                        i = item.IndexOf("title", i) + 7;
-                        parserItem.volatiled = item.Substring(i, item.IndexOf("\"", i) - i);                    
+                        parserItem.news = newsRegex.Match(item.Value).Value;
                     }
-                    //Console.WriteLine(parserItem.volatiled + " =========== " + parserItem.symbol);
+                    if (actualRegex.IsMatch(item.Value))
+                    {
+                        parserItem.actual = actualRegex.Match(item.Value).Value;
+                    }
+                    if (forecastRegex.IsMatch(item.Value))
+                    {
+                        parserItem.forecast = forecastRegex.Match(item.Value).Value;
+                    }
+                    if (previousRegex.IsMatch(item.Value))
+                    {
+                        parserItem.previous = previousRegex.Match(item.Value).Value;
+                    }
+                    parsedItems.Add(parserItem);
+                    Console.WriteLine(parserItem.symbol);
                 }
-                return parsedItems;
+                return cutParsedItems(parsedItems);
             }
 
-            private void cutParsedItems(List<ParserItem> parsedItems)
-            {
-                throw new NotImplementedException("Ну то что надо отработало");
+            private List<ParserItem> cutParsedItems(List<ParserItem> parsedItems)
+            {   
+                List<ParserItem> cutParserItems = new List<ParserItem>();
+                foreach(ParserItem item in parsedItems)
+                {
+                    Regex cutNewsTimeRegex = new Regex("\\d+:\\d+");
+                    Regex cutSymbolRegex = new Regex("[A-Z]{3}");
+                    Regex cutVolatileRegex = new Regex("[А-я]+? волатильность");
+                    //Остановился здесь
+                    Regex cutNewsRegex = new Regex("");
+                }
+                return cutParserItems;
             }
             private string getHTMLresponse()
             {   
@@ -263,14 +252,14 @@ namespace NewsParser
                 // НУЖНА ОПТИМИЗАЦИЯ (КАЖДЫЙ РАЗ ПАРСИМ ПО НОВОЙ)!!!
                 StringBuilder advise = new StringBuilder();
                 string prev = item.previous.Replace(",", ".");
-                double foreDouble;
+                double foreDouble = Double.MaxValue;
                 double actDouble;
                 string fore = item.forecast.Replace(",", ".");
                 string act = item.actual.Replace(",", ".");
                 string numberFormatPattern = "\\d+[\\.,]\\d*";           
                 Regex numberFormatRegex = new Regex(numberFormatPattern);
                 double prevDouble = Double.Parse(numberFormatRegex.Match(prev).Value);
-                if (Double.TryParse(numberFormatRegex.Match(fore).Value,out foreDouble))
+                if (numberFormatRegex.Match(fore).Success && Double.TryParse(numberFormatRegex.Match(fore).Value,out foreDouble))
                 {
                    if (prevDouble < foreDouble)
                    {
@@ -289,9 +278,9 @@ namespace NewsParser
                 {
                     advise.Append("NO ACTION\n");
                 }
-                if (Double.TryParse(numberFormatRegex.Match(act).Value,out actDouble))
+                if (numberFormatRegex.Match(act).Success && Double.TryParse(numberFormatRegex.Match(act).Value, out actDouble))
                 {
-                    if (foreDouble != null)
+                    if (foreDouble == Double.MaxValue)
                     {
                         if (actDouble < foreDouble)
                         {

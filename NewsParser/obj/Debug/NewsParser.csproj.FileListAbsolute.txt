@@ -7,3 +7,12 @@ C:\Users\Виктор\documents\visual studio 2013\Projects\NewsParser\NewsParse
 C:\Users\Виктор\documents\visual studio 2013\Projects\NewsParser\NewsParser\obj\Debug\NewsParser.exe
 C:\Users\Виктор\documents\visual studio 2013\Projects\NewsParser\NewsParser\obj\Debug\NewsParser.pdb
 C:\Users\Виктор\documents\visual studio 2013\Projects\NewsParser\NewsParser\obj\Debug\NewsParser.csprojResolveAssemblyReference.cache
+C:\Users\Виктор\Documents\Visual Studio 2013\Projects\NewsParser-master\NewsParser\bin\Debug\NewsParser.exe.config
+C:\Users\Виктор\Documents\Visual Studio 2013\Projects\NewsParser-master\NewsParser\obj\Debug\NewsParser.exe
+C:\Users\Виктор\Documents\Visual Studio 2013\Projects\NewsParser-master\NewsParser\obj\Debug\NewsParser.pdb
+C:\Users\Виктор\Documents\Visual Studio 2013\Projects\NewsParser-master\NewsParser\bin\Debug\NewsParser.exe
+C:\Users\Виктор\Documents\Visual Studio 2013\Projects\NewsParser-master\NewsParser\bin\Debug\NewsParser.pdb
+C:\Users\Виктор\Documents\Visual Studio 2013\Projects\NewsParser-master\NewsParser\obj\Debug\NewsParser.csprojResolveAssemblyReference.cache
+C:\Users\Виктор\Documents\Visual Studio 2013\Projects\NewsParser-master\NewsParser\obj\Debug\NewsParser.Form1.resources
+C:\Users\Виктор\Documents\Visual Studio 2013\Projects\NewsParser-master\NewsParser\obj\Debug\NewsParser.Properties.Resources.resources
+C:\Users\Виктор\Documents\Visual Studio 2013\Projects\NewsParser-master\NewsParser\obj\Debug\NewsParser.csproj.GenerateResource.Cache

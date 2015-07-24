@@ -132,7 +132,7 @@ namespace NewsParser
                         parserItem.previous = previousRegex.Match(item.Value).Value;
                     }
                     parsedItems.Add(parserItem);
-                    Console.WriteLine(parserItem.symbol);
+                    //Console.WriteLine(parserItem.symbol);
                 }
                 return cutParsedItems(parsedItems);
             }
@@ -145,8 +145,38 @@ namespace NewsParser
                     Regex cutNewsTimeRegex = new Regex("\\d+:\\d+");
                     Regex cutSymbolRegex = new Regex("[A-Z]{3}");
                     Regex cutVolatileRegex = new Regex("[А-я]+? волатильность");
-                    //Остановился здесь
-                    Regex cutNewsRegex = new Regex("");
+                    Regex cutNewsRegex = new Regex("(\\w+ )+? ?.+?</a>");
+                    Regex cutPrevActForeRegex = new Regex(">-?\\d+(,\\d+)?");
+                    if (cutNewsTimeRegex.IsMatch(item.time))
+                    {
+                        item.time = cutNewsTimeRegex.Match(item.time).Value;
+                    }
+                    if (cutSymbolRegex.IsMatch(item.symbol))
+                    {
+                        item.symbol = cutSymbolRegex.Match(item.symbol).Value;
+                    }
+                    if (item.volatiled != null && cutVolatileRegex.IsMatch(item.volatiled))
+                    {
+                        item.volatiled = cutVolatileRegex.Match(item.volatiled).Value;
+                    }
+                    if (cutNewsRegex.IsMatch(item.news))
+                    {
+                        item.news = cutNewsRegex.Match(item.news).Value.Replace("</a>","").Substring(1);
+                    }
+                    if (cutPrevActForeRegex.IsMatch(item.previous))
+                    {
+                        item.previous = cutPrevActForeRegex.Match(item.previous).Value.Replace(">", "");
+                    }
+                    if (cutPrevActForeRegex.IsMatch(item.forecast))
+                    {
+                        item.forecast = cutPrevActForeRegex.Match(item.forecast).Value.Replace(">", "");
+                    }
+                    if (cutPrevActForeRegex.IsMatch(item.actual))
+                    {
+                        item.actual = cutPrevActForeRegex.Match(item.actual).Value.Replace(">", "");
+                    }
+                    Console.WriteLine(item.previous);
+                    Console.WriteLine(item.news);
                 }
                 return cutParserItems;
             }

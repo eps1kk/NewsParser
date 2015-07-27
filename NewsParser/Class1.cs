@@ -11,7 +11,6 @@ using System.Text.RegularExpressions;
 
 namespace NewsParser
 {
-    
         class ParserItem
         {
 
@@ -40,6 +39,10 @@ namespace NewsParser
             {
                 return mNews;
             }
+            public void setNews(List<string> news)
+            {
+                mNews = news;
+            }
             public void addNews(string news) 
             {
                 mNews.Add(news); 
@@ -51,6 +54,10 @@ namespace NewsParser
             public List<string> getSymbols()
             {
                 return mSymbols;
+            }
+            public void setSymbols(List<string> symbols)
+            {
+                mSymbols = symbols;
             }
             public void addSymbol(string symbol)
             {
@@ -65,6 +72,7 @@ namespace NewsParser
         class Parser
         {
             private Filter mFilter;
+            
             private string mItemPattern = "<tr id=\"eventRowId.+?</tr>";
             private string mNewsTimePattern = "<td class=\"first left time.+?</td>";
             private string mSymbolPattern = "<td class=\"left flagCur noWrap.+?</td>";
@@ -145,13 +153,13 @@ namespace NewsParser
                     Regex cutNewsTimeRegex = new Regex("\\d+:\\d+");
                     Regex cutSymbolRegex = new Regex("[A-Z]{3}");
                     Regex cutVolatileRegex = new Regex("[А-я]+? волатильность");
-                    Regex cutNewsRegex = new Regex("(\\w+ )+? ?.+?</a>");
+                    Regex cutNewsRegex = new Regex("\\w[^>]+</a>");
                     Regex cutPrevActForeRegex = new Regex(">-?\\d+(,\\d+)?");
-                    if (cutNewsTimeRegex.IsMatch(item.time))
+                    if (item.time != null && cutNewsTimeRegex.IsMatch(item.time))
                     {
                         item.time = cutNewsTimeRegex.Match(item.time).Value;
                     }
-                    if (cutSymbolRegex.IsMatch(item.symbol))
+                    if (item.symbol != null && cutSymbolRegex.IsMatch(item.symbol))
                     {
                         item.symbol = cutSymbolRegex.Match(item.symbol).Value;
                     }
@@ -159,24 +167,35 @@ namespace NewsParser
                     {
                         item.volatiled = cutVolatileRegex.Match(item.volatiled).Value;
                     }
-                    if (cutNewsRegex.IsMatch(item.news))
+                    if (item.news != null && cutNewsRegex.IsMatch(item.news))
                     {
-                        item.news = cutNewsRegex.Match(item.news).Value.Replace("</a>","").Substring(1);
+                        item.news = cutNewsRegex.Match(item.news).Value.Replace("</a>","");
                     }
-                    if (cutPrevActForeRegex.IsMatch(item.previous))
+                    if (item.previous != null && cutPrevActForeRegex.IsMatch(item.previous))
                     {
                         item.previous = cutPrevActForeRegex.Match(item.previous).Value.Replace(">", "");
                     }
-                    if (cutPrevActForeRegex.IsMatch(item.forecast))
+                    else
+                    {
+                        item.previous = "";
+                    }
+                    if (item.forecast != null && cutPrevActForeRegex.IsMatch(item.forecast))
                     {
                         item.forecast = cutPrevActForeRegex.Match(item.forecast).Value.Replace(">", "");
                     }
-                    if (cutPrevActForeRegex.IsMatch(item.actual))
+                    else
+                    {
+                        item.forecast = "";
+                    }
+                    if (item.actual != null && cutPrevActForeRegex.IsMatch(item.actual))
                     {
                         item.actual = cutPrevActForeRegex.Match(item.actual).Value.Replace(">", "");
                     }
-                    Console.WriteLine(item.previous);
-                    Console.WriteLine(item.news);
+                    else
+                    {
+                        item.actual = "";
+                    }
+                    cutParserItems.Add(item);
                 }
                 return cutParserItems;
             }
@@ -203,7 +222,7 @@ namespace NewsParser
                     count = rStream.Read(buf, 0, buf.Length);
                     if (count != 0)
                     {
-                        sB.Append(Encoding.Default.GetString(buf, 0, count));
+                        sB.Append(Encoding.UTF8.GetString(buf, 0, count));
                     }
                 } while (count > 0);
                 return sB.ToString();
@@ -212,41 +231,49 @@ namespace NewsParser
         }
         class Decryptor
         {
+            public List<ParserItem> parsedItems = null;
             private List<ParserItem> highVolatile = new List<ParserItem>();
             private List<ParserItem> midVolatile = new List<ParserItem>();
             private List<ParserItem> lowVolatile = new List<ParserItem>();
             private Parser parser;
             private Filter filter;
 
-            public Decryptor(Parser parser)
+            public Decryptor(Parser parser,Filter filter)
             {
                 if (parser == null)
                 {
                     throw new Exception("Parser didn't initialized!");
                 }
-                decryptParsedItems(parser.parse());
+                parsedItems = parser.parse();
+                this.filter = filter;
+                decryptParsedItems(parsedItems);
             }
             
             private  void decryptParsedItems(List<ParserItem> news)
             {
                 foreach (ParserItem item in news)
-                {
-                    List<string> filterItems = filter.getSymbols();
-                    foreach(string fItem in filterItems)
+                {   
+                    List<string> filterSymbolItems = filter.getSymbols();
+                    List<string> filterNewsItems = filter.getNews();
+                    Regex newsCompareRegex = new Regex("(\\w+ )+");
+                    foreach(string fItem in filterSymbolItems)
                     {
-                        if (fItem.Equals(item.symbol))
+                        foreach (string fnItem in filterNewsItems)
                         {
-                            if (item.volatiled.Equals("Высокая волатильность"))
+                            if (fItem.Equals(item.symbol)  && fnItem.Contains(newsCompareRegex.Match(item.news).Value))
                             {
-                                highVolatile.Add(item);
-                            }
-                            else if (item.volatiled.Equals("Умеренная волатильность"))
-                            {
-                                midVolatile.Add(item);
-                            }
-                            else if (item.volatiled.Equals("Низкая волатильность"))
-                            {
-                                lowVolatile.Add(item);
+                                if (item.volatiled.Equals("Высокая волатильность"))
+                                {
+                                    highVolatile.Add(item);
+                                }
+                                else if (item.volatiled.Equals("Умеренная волатильность"))
+                                {
+                                    midVolatile.Add(item);
+                                }
+                                else if (item.volatiled.Equals("Низкая волатильность"))
+                                {
+                                    lowVolatile.Add(item);
+                                }
                             }
                         }
                     }

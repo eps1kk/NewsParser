@@ -1,2 +1,4 @@
-USD
 JPY
+USD
+EUR
+RUB

@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.label1 = new System.Windows.Forms.Label();
+            this.exception_label = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.actualNewsListBox = new System.Windows.Forms.ListBox();
@@ -42,18 +42,19 @@
             this.lowRadioButton = new System.Windows.Forms.RadioButton();
             this.midRadioButton = new System.Windows.Forms.RadioButton();
             this.highRadioButton = new System.Windows.Forms.RadioButton();
+            this.button1 = new System.Windows.Forms.Button();
             this.volatileGroup.SuspendLayout();
             this.SuspendLayout();
             // 
-            // label1
+            // exception_label
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(9, 253);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(54, 13);
-            this.label1.TabIndex = 1;
-            this.label1.Text = "Exception";
-            this.label1.Visible = false;
+            this.exception_label.AutoSize = true;
+            this.exception_label.Location = new System.Drawing.Point(9, 253);
+            this.exception_label.Name = "exception_label";
+            this.exception_label.Size = new System.Drawing.Size(54, 13);
+            this.exception_label.TabIndex = 1;
+            this.exception_label.Text = "Exception";
+            this.exception_label.Visible = false;
             // 
             // label2
             // 
@@ -122,7 +123,7 @@
             // poolSymbolListBox
             // 
             this.poolSymbolListBox.FormattingEnabled = true;
-            this.poolSymbolListBox.Location = new System.Drawing.Point(12, 155);
+            this.poolSymbolListBox.Location = new System.Drawing.Point(12, 153);
             this.poolSymbolListBox.Name = "poolSymbolListBox";
             this.poolSymbolListBox.Size = new System.Drawing.Size(132, 95);
             this.poolSymbolListBox.TabIndex = 12;
@@ -182,11 +183,22 @@
             this.highRadioButton.Text = "High";
             this.highRadioButton.UseVisualStyleBackColor = true;
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(535, 1);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(61, 23);
+            this.button1.TabIndex = 18;
+            this.button1.Text = "Update";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click_1);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(608, 276);
+            this.ClientSize = new System.Drawing.Size(608, 275);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.reverse_checkBox);
             this.Controls.Add(this.poolSymbolListBox);
             this.Controls.Add(this.actualSymbolListBox);
@@ -196,7 +208,7 @@
             this.Controls.Add(this.actualNewsListBox);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
+            this.Controls.Add(this.exception_label);
             this.Controls.Add(this.volatileGroup);
             this.Name = "Form1";
             this.Text = "Form1";
@@ -210,7 +222,7 @@
 
         #endregion
 
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label exception_label;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.ListBox actualNewsListBox;
@@ -224,6 +236,7 @@
         private System.Windows.Forms.RadioButton lowRadioButton;
         private System.Windows.Forms.RadioButton midRadioButton;
         private System.Windows.Forms.RadioButton highRadioButton;
+        private System.Windows.Forms.Button button1;
     }
 }
 

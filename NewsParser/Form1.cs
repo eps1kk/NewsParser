@@ -22,15 +22,9 @@ namespace NewsParser
         private Parser parser;
         private Decryptor decryptor;
         private Writer writer;
-        private string path = "E:\test.txt";  
-        private List<string> poolSymbolsList = new List<string>();
-        //private List<string> actualSymbolsList = new List<string>();
-        public List<string> poolNewsList = new List<string>();
-        //public List<string> actualNewsList = new List<string>();
-
-        public List<actualNewsItem> actualNewsItemList = new List<actualNewsItem>();
+        private string advisePath;
         private void onApplicationExit(object sender, EventArgs e)
-        {
+        {   
             try
             {
                 StreamWriter sw = new StreamWriter(directory + actualNewsFilename, false);
@@ -58,12 +52,13 @@ namespace NewsParser
         public Form1()
         {
             directory = AppDomain.CurrentDomain.BaseDirectory;
+            advisePath = directory + "advise.txt";
             InitializeComponent();
             Application.ApplicationExit += onApplicationExit;
-            filter = new Filter();
+            filter = new Filter(this);
             parser = new Parser();
             decryptor = new Decryptor(parser,filter);
-            writer = new Writer(path);
+            writer = new Writer(advisePath);
             checkUpdates(null, null);
             System.Timers.Timer updateTimer = new System.Timers.Timer(15 * 60 * 60 * 1000);
             updateTimer.Elapsed += new System.Timers.ElapsedEventHandler(checkUpdates);
@@ -77,6 +72,7 @@ namespace NewsParser
             lowRadioButton.CheckedChanged += radioButton_CheckedChanged;
             reverse_checkBox.CheckedChanged += reverse_checkBox_CheckedChanged;
             ReadData();
+            writer.write(decryptor.getAdvises());
         }
 
         private void ReadData()
@@ -90,9 +86,8 @@ namespace NewsParser
                 while (line != null)
                 {
                     actualNewsListBox.Items.Add(line);
-                    actualNewsItem item = new actualNewsItem(getNews(line), reverseGetVolatile(line), getReverse(line), getSymbol(line));
-                    actualNewsItemList.Add(item);
-                    updateFilter(Actions.AddNews, item);
+                    actualNewsItem item = new actualNewsItem(getNews(line), getVolatile(line), getReverse(line), getSymbol(line));
+                    updateFilter(Actions.AddNews, line);
                     line = sr.ReadLine();
                 }
                 sr.Close();
@@ -130,11 +125,17 @@ namespace NewsParser
                 {
                     case true:
                         if (!reverse_checkBox.Checked)
+                        {
                             actualNewsListBox.Items[actualNewsListBox.SelectedIndex] = actualNewsListBox.SelectedItem.ToString().Replace("True", "False");
+                            updateFilter(Actions.UpdateNewsReverse, actualNewsListBox.SelectedItem.ToString());
+                        }
                         break;
                     case false:
                         if (reverse_checkBox.Checked)
+                        {
                             actualNewsListBox.Items[actualNewsListBox.SelectedIndex] = actualNewsListBox.SelectedItem.ToString().Replace("False", "True");
+                            updateFilter(Actions.UpdateNewsReverse, actualNewsListBox.SelectedItem.ToString());
+                        }
                         break;
                     default:
                         break;
@@ -147,20 +148,17 @@ namespace NewsParser
         {
             if (actualNewsListBox.SelectedIndex >= 0)
             {
-                switch (reverseGetVolatile(actualNewsListBox.SelectedItem.ToString()))
+                switch (getVolatile(actualNewsListBox.SelectedItem.ToString()))
                 {
                     case "High":
                         
                         if (!highRadioButton.Checked)
                         {
-                            if (midRadioButton.Checked)
-                            {
-                                actualNewsListBox.Items[actualNewsListBox.SelectedIndex] = actualNewsListBox.SelectedItem.ToString().Replace("High", "Mid");
-                                findActualNewsItem(actualNewsListBox.SelectedItem.ToString()).volatiled = "Mid";
-                            }
+                            if (midRadioButton.Checked)             
+                                actualNewsListBox.Items[actualNewsListBox.SelectedIndex] = actualNewsListBox.SelectedItem.ToString().Replace("High", "Mid");          
                             if (lowRadioButton.Checked)
                                 actualNewsListBox.Items[actualNewsListBox.SelectedIndex] = actualNewsListBox.SelectedItem.ToString().Replace("High", "Low");
-                                findActualNewsItem(actualNewsListBox.SelectedItem.ToString()).volatiled = "Low";
+                            updateFilter(Actions.UpdateNewsVolatile, actualNewsListBox.SelectedItem.ToString());
                         }
                         break;
                     case "Mid":
@@ -170,6 +168,7 @@ namespace NewsParser
                                 actualNewsListBox.Items[actualNewsListBox.SelectedIndex] = actualNewsListBox.SelectedItem.ToString().Replace("Mid", "High");
                             if (lowRadioButton.Checked)
                                 actualNewsListBox.Items[actualNewsListBox.SelectedIndex] = actualNewsListBox.SelectedItem.ToString().Replace("Mid", "Low");
+                            updateFilter(Actions.UpdateNewsVolatile, actualNewsListBox.SelectedItem.ToString());
                         }
                         break;
                     case "Low":
@@ -179,6 +178,7 @@ namespace NewsParser
                                 actualNewsListBox.Items[actualNewsListBox.SelectedIndex] = actualNewsListBox.SelectedItem.ToString().Replace("Low", "Mid");
                             if (highRadioButton.Checked)
                                 actualNewsListBox.Items[actualNewsListBox.SelectedIndex] = actualNewsListBox.SelectedItem.ToString().Replace("Low", "High");
+                            updateFilter(Actions.UpdateNewsVolatile, actualNewsListBox.SelectedItem.ToString());
                         }
                         break;
                     default:
@@ -186,18 +186,12 @@ namespace NewsParser
                 }
             }
         }
-
-        private actualNewsItem findActualNewsItem(string p)
-        {
-            throw new NotImplementedException();
-        }
-
         void newsListBox_SelectedIndexChanged(object sender, EventArgs e)
         {
             //throw new NotImplementedException();
             if (actualNewsListBox.SelectedIndex >= 0)
             {
-               switch (reverseGetVolatile(actualNewsListBox.SelectedItem.ToString()))
+               switch (getVolatile(actualNewsListBox.SelectedItem.ToString()))
                {
                    case "High":
                        highRadioButton.Checked = true;
@@ -222,7 +216,7 @@ namespace NewsParser
             }
         }
 
-        private string reverseGetVolatile(string p)
+        public string getVolatile(string p)
         {
             if (p.Contains("| High"))
                 return "High";
@@ -233,7 +227,7 @@ namespace NewsParser
             return "High";
         }
 
-        private bool getReverse(string p)
+        public bool getReverse(string p)
         {
             if (p.Contains("| False"))
                 return false;
@@ -248,21 +242,27 @@ namespace NewsParser
             actualSymbolListBox.Items.Remove(actualSymbolListBox.SelectedItem.ToString());    
         }
 
-        private void updateFilter(Actions action, object element)
+        private void updateFilter(Actions action, string element)
         {
             switch (action)
             {
                 case Actions.AddSymbol:
-                    filter.addSymbol(element.ToString());
+                    filter.addSymbol(element);
                     break;
                 case Actions.RemoveSymbol:
-                    filter.removeSymbol(element.ToString());
+                    filter.removeSymbol(element);
                     break;
-                case Actions.AddNews:             
-                    filter.addNews((actualNewsItem) element);
+                case Actions.AddNews:
+                    filter.addNews(element);
                     break;
                 case Actions.RemoveNews:
-                    filter.removeNews((actualNewsItem) element);
+                    filter.removeNews(element);
+                    break;
+                case Actions.UpdateNewsReverse:
+                    filter.updateReverse(element);
+                    break;
+                case Actions.UpdateNewsVolatile:
+                    filter.updateVolatile(element);
                     break;
                 default:
                     break;
@@ -281,31 +281,21 @@ namespace NewsParser
 
         private void removeActualNews(object sender, EventArgs e)
         {
-            foreach (actualNewsItem item in actualNewsItemList)
-            {
-                if (getNews(actualNewsListBox.SelectedItem.ToString()).Contains(item.news))
-                {   
-                    actualNewsItemList.Remove(item);
-                    updateFilter(Actions.RemoveNews, item);
-                    actualNewsListBox.Items.Remove(actualNewsListBox.SelectedItem.ToString());
-                    break;
-                }
-            }
-            
+            if (actualNewsListBox.SelectedIndex >= 0)
+            {   
+                updateFilter(Actions.RemoveNews, actualNewsListBox.SelectedItem.ToString());
+                actualNewsListBox.Items.Remove(actualNewsListBox.SelectedItem.ToString());
+            }         
         }
 
         private void addActualNews(object sender, EventArgs e)
         {
-            actualNewsItem item = new actualNewsItem();
-            string tempString = poolNewsListBox.SelectedItem.ToString();
-            item.symbol = getSymbol(tempString);
-            item.news = getNews(tempString);
-            item.volatiled = getVolatile();
-            item.reverse = getReverse();
             bool find = false;
-            foreach (actualNewsItem fItem in actualNewsItemList)
+            foreach (string item in actualNewsListBox.Items)
             {
-                if (fItem.news.Equals(item.news) && fItem.symbol.Equals(item.symbol))
+                Console.WriteLine(item);
+                Console.WriteLine(poolNewsListBox.SelectedItem.ToString());
+                if (item.Contains(poolNewsListBox.SelectedItem.ToString()))
                 {
                     find = true;
                     break;
@@ -313,26 +303,26 @@ namespace NewsParser
             }
             if (!find)
             {
-                updateFilter(Actions.AddNews, item);
-                item.idx = actualNewsItemList.Count;     
-                actualNewsListBox.Items.Insert(actualNewsItemList.Count, item.symbol + " | " + item.news + " | " + item.volatiled + " | " + item.reverse);
-                actualNewsItemList.Add(item);
+                string news = poolNewsListBox.SelectedItem.ToString();
+                news = getSymbol(news) + " | " + getNews(news) + " | " + getVolatile() + " | " + getReverse();
+                actualNewsListBox.Items.Add(news);
+                updateFilter(Actions.AddNews, news);
             }
         }
 
-        private string getNews(string tempString)
+        public string getNews(string tempString)
         {
             if(tempString.IndexOf("|",5) < 0)
                 return tempString.Substring(6);
-            return tempString.Substring(6, tempString.IndexOf("|", 6) - 1 );
+            return tempString.Substring(6, tempString.IndexOf("|", 6) - 7);
         }
 
-        private string getSymbol(string tempString)
+        public string getSymbol(string tempString)
         {
             return tempString.Substring(0, 3);
         }
 
-        private bool getReverse()
+        public bool getReverse()
         {
             if (reverse_checkBox.Checked)
             {
@@ -341,21 +331,15 @@ namespace NewsParser
             return false;
         }
 
-        private string getVolatile()
+        public string getVolatile()
         {
             if (highRadioButton.Checked)
-            {
                 return "High";
-            }
-            else if (midRadioButton.Checked)
-            {
+            if (midRadioButton.Checked)
                 return "Mid";
-            }
-            else if (lowRadioButton.Checked)
-            {
+            if (lowRadioButton.Checked)
                 return "Low";
-            }
-            else return "High";
+            return "High";
         }
 
         private void checkUpdates(Object source, ElapsedEventArgs e)
@@ -377,18 +361,6 @@ namespace NewsParser
         }
         private void button1_Click(object sender, EventArgs e)
         {
-            label1.Visible = false;
-            Filter filter = new Filter();
-            Parser parser = new Parser();
-            try
-            {
-                parser.parse();
-            }
-            catch (Exception exc) 
-            {
-                label1.Text = exc.Message;
-                label1.Visible = true;
-            }
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -399,6 +371,11 @@ namespace NewsParser
         private void volatileGroup_Enter(object sender, EventArgs e)
         {
 
+        }
+
+        private void button1_Click_1(object sender, EventArgs e)
+        {
+            checkUpdates(null, null);
         }
 
 

@@ -50,9 +50,11 @@ namespace NewsParser
         {
             private List<string> mSymbols = new List<string>();
             private List<actualNewsItem> mNews = new List<actualNewsItem>();
-            public Filter()
+            private Form1 mainForm;
+            public Filter(Form1 form)
             {
                 // Emptry constructor
+                mainForm = form;
             }
             public List<actualNewsItem> getNews() 
             {
@@ -66,13 +68,53 @@ namespace NewsParser
             {
                 mNews.Add(new actualNewsItem(news, volatiled, reverse, symbol));
             }
-            public void addNews(actualNewsItem item)
+            public void addNews(string line)
             {
+                actualNewsItem item = new actualNewsItem();
+                item.symbol = mainForm.getSymbol(line);
+                item.news = mainForm.getNews(line);
+                item.volatiled = mainForm.getVolatile(line);
+                item.reverse = mainForm.getReverse(line);  
                 mNews.Add(item);
             }
-            public void removeNews(actualNewsItem news)
+            public bool equalsNews(actualNewsItem item, string line)
             {
-                mNews.Remove(news);
+                if (item.news.Contains(mainForm.getNews(line)) && item.symbol.Contains(mainForm.getSymbol(line)))
+                    return true;
+                return false;
+            }
+            public void removeNews(string line)
+            {
+                foreach (actualNewsItem item in mNews)
+                {
+                    if (equalsNews(item, line))
+                    {
+                        mNews.Remove(item);
+                        break;
+                    }
+                }
+            }
+            public void updateVolatile(string line)
+            {
+                foreach (actualNewsItem item in mNews)
+                {
+                    if (equalsNews(item, line))
+                    {
+                        item.volatiled = mainForm.getVolatile(line);
+                        break;
+                    }
+                }
+            }
+            public void updateReverse(string line)
+            {
+                foreach (actualNewsItem item in mNews)
+                {
+                    if (equalsNews(item, line))
+                    {
+                        item.reverse = mainForm.getReverse(line);
+                        break;
+                    }
+                }
             }
             public List<string> getSymbols()
             {
@@ -290,7 +332,7 @@ namespace NewsParser
                                 }
                             }
                         }
-                    }
+                    }  
                 }
             }
             
@@ -410,14 +452,23 @@ namespace NewsParser
             {
                 if (path.Length < 2)
                 {
-                    throw new Exception("Incorrect path");
+                    throw new Exception("Incorrect advisePath");
                 }
                 this.path = path;  
             }
             // ВСЕГДА СОЗДАЁТ НОВЫЙ ФАЙЛ!!!
             public void write(string text)
             {
-                System.IO.File.WriteAllText("@" + path, text);
+                try
+                {
+                    StreamWriter sw = new StreamWriter(path, true);
+                    sw.WriteLine(text);
+                    sw.Close();
+                }
+                catch (Exception exc)
+                {
+                    Console.WriteLine(exc.Message);
+                }
             }
         }
 }

@@ -11,6 +11,25 @@ using System.Text.RegularExpressions;
 
 namespace NewsParser
 {
+        public class actualNewsItem
+        {
+            public actualNewsItem()
+            {
+
+            }
+            public actualNewsItem(string news, string volatiled, bool reverse,string symbol)
+            {
+                this.news = news;
+                this.volatiled = volatiled;
+                this.reverse = reverse;
+                this.symbol = symbol;
+            }
+            public string news;
+            public string volatiled;
+            public bool reverse;
+            public string symbol;
+            public int idx;
+        }
         class ParserItem
         {
 
@@ -30,24 +49,28 @@ namespace NewsParser
         class Filter
         {
             private List<string> mSymbols = new List<string>();
-            private List<string> mNews = new List<string>();
+            private List<actualNewsItem> mNews = new List<actualNewsItem>();
             public Filter()
             {
                 // Emptry constructor
             }
-            public List<string> getNews() 
+            public List<actualNewsItem> getNews() 
             {
                 return mNews;
             }
-            public void setNews(List<string> news)
+            public void setNews(List<actualNewsItem> news)
             {
                 mNews = news;
             }
-            public void addNews(string news) 
+            public void addNews(string news, string volatiled, bool reverse, string symbol)
             {
-                mNews.Add(news); 
+                mNews.Add(new actualNewsItem(news, volatiled, reverse, symbol));
             }
-            public void removeNews(string news)
+            public void addNews(actualNewsItem item)
+            {
+                mNews.Add(item);
+            }
+            public void removeNews(actualNewsItem news)
             {
                 mNews.Remove(news);
             }
@@ -71,8 +94,6 @@ namespace NewsParser
         }
         class Parser
         {
-            private Filter mFilter;
-            
             private string mItemPattern = "<tr id=\"eventRowId.+?</tr>";
             private string mNewsTimePattern = "<td class=\"first left time.+?</td>";
             private string mSymbolPattern = "<td class=\"left flagCur noWrap.+?</td>";
@@ -81,16 +102,9 @@ namespace NewsParser
             private string mActualPattern = "<td class=\"bold act.+?</td>";
             private string mForecastPattern = "<td class=\"fore event.+?</td>";
             private string mPreviousPattern = "<td class=\"prev blackFont.+?</td>";
-            public Parser(Filter filter)
+            public Parser()
             {
-                if (filter != null)
-                {
-                    mFilter = filter;
-                }
-                else
-                {
-                    throw new Exception("Filter doesn't initialized!");
-                }
+
             }
             public List<ParserItem> parse()
             {
@@ -254,23 +268,23 @@ namespace NewsParser
                 foreach (ParserItem item in news)
                 {   
                     List<string> filterSymbolItems = filter.getSymbols();
-                    List<string> filterNewsItems = filter.getNews();
+                    List<actualNewsItem> filterNewsItems = filter.getNews();
                     Regex newsCompareRegex = new Regex("(\\w+ )+");
                     foreach(string fItem in filterSymbolItems)
                     {
-                        foreach (string fnItem in filterNewsItems)
+                        foreach (actualNewsItem fnItem in filterNewsItems)
                         {
-                            if (fItem.Equals(item.symbol)  && fnItem.Contains(newsCompareRegex.Match(item.news).Value))
+                            if (fItem.Equals(item.symbol)  && fnItem.news.Contains(newsCompareRegex.Match(item.news).Value))
                             {
-                                if (item.volatiled.Equals("Высокая волатильность"))
+                                if (fnItem.volatiled.Equals("High"))
                                 {
                                     highVolatile.Add(item);
                                 }
-                                else if (item.volatiled.Equals("Умеренная волатильность"))
+                                else if (fnItem.volatiled.Equals("Mid"))
                                 {
                                     midVolatile.Add(item);
                                 }
-                                else if (item.volatiled.Equals("Низкая волатильность"))
+                                else if (fnItem.volatiled.Equals("Low"))
                                 {
                                     lowVolatile.Add(item);
                                 }
@@ -392,24 +406,18 @@ namespace NewsParser
         class Writer
         {
             private string path;
-            private Decryptor decryptor;
-            public Writer(string path, Decryptor decryptor)
+            public Writer(string path)
             {
                 if (path.Length < 2)
                 {
                     throw new Exception("Incorrect path");
                 }
-                if (decryptor == null)
-                {
-                    throw new Exception("Decryptor didn't initialized");
-                }
-                this.path = path;
-                this.decryptor = decryptor;
+                this.path = path;  
             }
             // ВСЕГДА СОЗДАЁТ НОВЫЙ ФАЙЛ!!!
-            public void write()
+            public void write(string text)
             {
-                System.IO.File.WriteAllText("@" + path, decryptor.getAdvises());
+                System.IO.File.WriteAllText("@" + path, text);
             }
         }
 }

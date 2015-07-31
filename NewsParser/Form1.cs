@@ -43,7 +43,8 @@ namespace NewsParser
                 sw.Close();
             }
             catch (Exception exc)
-            {   
+            {
+                Console.WriteLine(exc.Message);
                 actualNewsFilename = actualNewsFilename + DateTime.Now.Minute;
                 actualSymbolsFilename = actualSymbolsFilename + DateTime.Now.Minute;
                 onApplicationExit(null, null);
@@ -57,11 +58,12 @@ namespace NewsParser
             Application.ApplicationExit += onApplicationExit;
             filter = new Filter(this);
             parser = new Parser();
-            decryptor = new Decryptor(parser,filter);
+            decryptor = new Decryptor(filter);
             writer = new Writer(advisePath);
+            ReadData(); 
             checkUpdates(null, null);
             System.Timers.Timer updateTimer = new System.Timers.Timer(15 * 60 * 60 * 1000);
-            updateTimer.Elapsed += new System.Timers.ElapsedEventHandler(checkUpdates);
+            updateTimer.Elapsed += new System.Timers.ElapsedEventHandler(checkUpdates);  
             poolNewsListBox.DoubleClick += addActualNews;
             actualNewsListBox.DoubleClick += removeActualNews;
             actualNewsListBox.SelectedIndexChanged += newsListBox_SelectedIndexChanged;
@@ -71,8 +73,7 @@ namespace NewsParser
             midRadioButton.CheckedChanged += radioButton_CheckedChanged;
             lowRadioButton.CheckedChanged += radioButton_CheckedChanged;
             reverse_checkBox.CheckedChanged += reverse_checkBox_CheckedChanged;
-            ReadData();
-            writer.write(decryptor.getAdvises());
+            
         }
 
         private void ReadData()
@@ -94,7 +95,7 @@ namespace NewsParser
             }
             catch (Exception exc)
             {
-                actualNewsListBox.Items.Add("Не удалось считать актуальные новости!");
+                actualNewsListBox.Items.Add("Не удалось считать актуальные новости!" + exc.StackTrace);
                 sr.Close();
             }
             if (System.IO.File.Exists(directory + actualSymbolsFilename))
@@ -293,8 +294,6 @@ namespace NewsParser
             bool find = false;
             foreach (string item in actualNewsListBox.Items)
             {
-                Console.WriteLine(item);
-                Console.WriteLine(poolNewsListBox.SelectedItem.ToString());
                 if (item.Contains(poolNewsListBox.SelectedItem.ToString()))
                 {
                     find = true;
@@ -344,10 +343,8 @@ namespace NewsParser
 
         private void checkUpdates(Object source, ElapsedEventArgs e)
         {
-            decryptor.parsedItems = parser.parse();
-            decryptor.getAdvises();
-            //Console.WriteLine(decryptor.parsedItems.Count);
-            foreach (ParserItem item in decryptor.parsedItems)
+            writer.write(decryptor.getAdvises(parser.parse()));            
+            foreach (ParserItem item in parser.parse())
             {
                 if (!poolNewsListBox.Items.Contains(item.symbol + " | " + item.news))
                 {

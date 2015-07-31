@@ -70,12 +70,19 @@ namespace NewsParser
             }
             public void addNews(string line)
             {
-                actualNewsItem item = new actualNewsItem();
-                item.symbol = mainForm.getSymbol(line);
-                item.news = mainForm.getNews(line);
-                item.volatiled = mainForm.getVolatile(line);
-                item.reverse = mainForm.getReverse(line);  
-                mNews.Add(item);
+                try
+                {
+                    actualNewsItem item = new actualNewsItem();
+                    item.symbol = mainForm.getSymbol(line);
+                    item.news = mainForm.getNews(line);
+                    item.volatiled = mainForm.getVolatile(line);
+                    item.reverse = mainForm.getReverse(line);
+                    mNews.Add(item);
+                }
+                catch (Exception exc)
+                {
+                    Console.WriteLine(exc.Message);
+                }
             }
             public bool equalsNews(actualNewsItem item, string line)
             {
@@ -144,15 +151,19 @@ namespace NewsParser
             private string mActualPattern = "<td class=\"bold act.+?</td>";
             private string mForecastPattern = "<td class=\"fore event.+?</td>";
             private string mPreviousPattern = "<td class=\"prev blackFont.+?</td>";
+            private List<ParserItem> parsedItems = new List<ParserItem>();
             public Parser()
             {
 
             }
             public List<ParserItem> parse()
             {
-                List<ParserItem> parsedItems = new List<ParserItem>();
                 // write parse this
                 string response = getHTMLresponse();
+                if (response == null)
+                    return parsedItems;
+                if (parsedItems.Count > 0)
+                    return parsedItems;
                 //System.IO.File.WriteAllText(@"E:\test.txt", response);
                 RegexOptions regOptions = RegexOptions.Singleline;
                 Regex itemRegex = new Regex(mItemPattern,regOptions);
@@ -256,32 +267,40 @@ namespace NewsParser
                 return cutParserItems;
             }
             private string getHTMLresponse()
-            {   
-                StringBuilder sB = new StringBuilder();
-                string uri = "http://ru.investing.com";
-                byte[] buf = new byte[8192];
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
-                request.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip.deflate,sdch");
-                request.UserAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.114 Safari/537.36";
-                request.Accept = "text/html";
-                request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-                WebHeaderCollection requestHeaders = request.Headers;
-                requestHeaders.Add("Accept-Language:ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4");
-                //requestHeaders.Add("Accept:text/html");
-                //requestHeaders.Add("User-Agent:Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.114 Safari/537.36");
-                requestHeaders.Add("Cookie:__gads=ID=c6d164b2c519e5ef:T=1435221111:S=ALNI_MZ-wgo_tWlWkJoTSg5LtPExvIiXUA; activeConsent-7=1.1; _VT_content_105803_1=1; _VT_content_105871_1=1; _VT_content_105927_1=1; geoC=RU; fpros_popup=1435745154; gtmFired=OK; _ga=GA1.2.1005974067.1435221105");
-                HttpWebResponse response = (HttpWebResponse) request.GetResponse();
-                Stream rStream = response.GetResponseStream();
-                int count = 0;
-                do
+            {
+                try
                 {
-                    count = rStream.Read(buf, 0, buf.Length);
-                    if (count != 0)
+                    StringBuilder sB = new StringBuilder();
+                    string uri = "http://ru.investing.com";
+                    byte[] buf = new byte[8192];
+                    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
+                    request.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip.deflate,sdch");
+                    request.UserAgent = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.114 Safari/537.36";
+                    request.Accept = "text/html";
+                    request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+                    WebHeaderCollection requestHeaders = request.Headers;
+                    requestHeaders.Add("Accept-Language:ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4");
+                    //requestHeaders.Add("Accept:text/html");
+                    //requestHeaders.Add("User-Agent:Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.114 Safari/537.36");
+                    requestHeaders.Add("Cookie:__gads=ID=c6d164b2c519e5ef:T=1435221111:S=ALNI_MZ-wgo_tWlWkJoTSg5LtPExvIiXUA; activeConsent-7=1.1; _VT_content_105803_1=1; _VT_content_105871_1=1; _VT_content_105927_1=1; geoC=RU; fpros_popup=1435745154; gtmFired=OK; _ga=GA1.2.1005974067.1435221105");
+                    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                    Stream rStream = response.GetResponseStream();
+                    int count = 0;
+                    do
                     {
-                        sB.Append(Encoding.UTF8.GetString(buf, 0, count));
-                    }
-                } while (count > 0);
-                return sB.ToString();
+                        count = rStream.Read(buf, 0, buf.Length);
+                        if (count != 0)
+                        {
+                            sB.Append(Encoding.UTF8.GetString(buf, 0, count));
+                        }
+                    } while (count > 0);
+                    return sB.ToString();
+                }
+                catch (Exception exc)
+                {
+                    Console.WriteLine(exc.Message);
+                    return null;
+                }
             }
 
         }
@@ -291,66 +310,57 @@ namespace NewsParser
             private List<ParserItem> highVolatile = new List<ParserItem>();
             private List<ParserItem> midVolatile = new List<ParserItem>();
             private List<ParserItem> lowVolatile = new List<ParserItem>();
-            private Parser parser;
             private Filter filter;
 
-            public Decryptor(Parser parser,Filter filter)
-            {
-                if (parser == null)
-                {
-                    throw new Exception("Parser didn't initialized!");
-                }
-                parsedItems = parser.parse();
+            public Decryptor(Filter filter)
+            {         
                 this.filter = filter;
-                decryptParsedItems(parsedItems);
             }
             
             private  void decryptParsedItems(List<ParserItem> news)
-            {
-                foreach (ParserItem item in news)
+            {   
+                List<actualNewsItem> filterNewsItems = filter.getNews();
+                foreach (ParserItem parserItem in news)
                 {   
-                    List<string> filterSymbolItems = filter.getSymbols();
-                    List<actualNewsItem> filterNewsItems = filter.getNews();
-                    Regex newsCompareRegex = new Regex("(\\w+ )+");
-                    foreach(string fItem in filterSymbolItems)
+                    foreach (actualNewsItem filterItem in filterNewsItems)
                     {
-                        foreach (actualNewsItem fnItem in filterNewsItems)
+                        if (parserItem.symbol.Contains(filterItem.symbol) && parserItem.news.Contains(filterItem.news))
                         {
-                            if (fItem.Equals(item.symbol)  && fnItem.news.Contains(newsCompareRegex.Match(item.news).Value))
+                            switch (filterItem.volatiled)
                             {
-                                if (fnItem.volatiled.Equals("High"))
-                                {
-                                    highVolatile.Add(item);
-                                }
-                                else if (fnItem.volatiled.Equals("Mid"))
-                                {
-                                    midVolatile.Add(item);
-                                }
-                                else if (fnItem.volatiled.Equals("Low"))
-                                {
-                                    lowVolatile.Add(item);
-                                }
+                                case "High":
+                                    highVolatile.Add(parserItem);
+                                    break;
+                                case "Mid":
+                                    midVolatile.Add(parserItem);
+                                    break;
+                                case "Low":
+                                    lowVolatile.Add(parserItem);
+                                    break;
+                                default:
+                                    break;
                             }
                         }
-                    }  
+                    }
                 }
             }
             
-            public string getAdvises()
+            public string getAdvises(List<ParserItem> news)
             {
+                decryptParsedItems(news);
                 StringBuilder advise = new StringBuilder();
                 advise.Append(System.DateTime.Today.Day + "day\n");
                 foreach (ParserItem item in highVolatile)
                 {
-                    advise.Append(getHighVolatileAdvise(item));
+                    advise.Append(getHighVolatileAdvise(item) + "\n");
                 }
                 foreach (ParserItem item in midVolatile)
                 {
-                    advise.Append(getMidVolatileAdvise(item));
+                    advise.Append(getMidVolatileAdvise(item) + "\n");
                 }
                 foreach (ParserItem item in lowVolatile)
                 {
-                    advise.Append(getLowVolatileAdvise(item));
+                    advise.Append(getLowVolatileAdvise(item) + "\n");
                 }
                 return advise.ToString();
             }
@@ -371,25 +381,26 @@ namespace NewsParser
                 string act = item.actual.Replace(",", ".");
                 string numberFormatPattern = "\\d+[\\.,]\\d*";           
                 Regex numberFormatRegex = new Regex(numberFormatPattern);
-                double prevDouble = Double.Parse(numberFormatRegex.Match(prev).Value);
+                double prevDouble;
+                Double.TryParse(numberFormatRegex.Match(prev).Value, out prevDouble);
                 if (numberFormatRegex.Match(fore).Success && Double.TryParse(numberFormatRegex.Match(fore).Value,out foreDouble))
                 {
                    if (prevDouble < foreDouble)
                    {
-                       advise.Append("BUY ACTION MID\n");
+                       advise.Append("BUY ACTION MID\r\n");
                    }
                    else if (Math.Abs(prevDouble - foreDouble) < 0.0000001)
                    {
-                       advise.Append("NO ACTION\n");
+                       advise.Append("NO ACTION\r\n");
                    }
                    else
                    {
-                       advise.Append("SELL ACTION MID\n");
+                       advise.Append("SELL ACTION MID\r\n");
                    }
                 }
                 else
                 {
-                    advise.Append("NO ACTION\n");
+                    advise.Append("NO ACTION\r\n");
                 }
                 if (numberFormatRegex.Match(act).Success && Double.TryParse(numberFormatRegex.Match(act).Value, out actDouble))
                 {
@@ -398,7 +409,7 @@ namespace NewsParser
                         if (actDouble < foreDouble)
                         {
                             advise.Clear();
-                            advise.Append("SELL ACTION MID\n");
+                            advise.Append("SELL ACTION MID\r\n");
                         }
                         else if (Math.Abs(actDouble - foreDouble) < 0.0000001)
                         {
@@ -407,7 +418,7 @@ namespace NewsParser
                         else
                         {
                             advise.Clear();
-                            advise.Append("BUY ACTION MID\n");
+                            advise.Append("BUY ACTION MID\r\n");
                         }
                     }
                     else
@@ -415,17 +426,17 @@ namespace NewsParser
                         if (actDouble < prevDouble)
                         {
                             advise.Clear();
-                            advise.Append("SELL ACTION MID\n");
+                            advise.Append("SELL ACTION MID\r\n");
                         }
                         else if (Math.Abs(actDouble - prevDouble) < 0.0000001)
                         {
                             advise.Clear();
-                            advise.Append("NO ACTION\n");
+                            advise.Append("NO ACTION\r\n");
                         }
                         else
                         {
                             advise.Clear();
-                            advise.Append("BUY ACTION MID\n");
+                            advise.Append("BUY ACTION MID\r\n");
                         }
                     }
                 }
@@ -456,7 +467,6 @@ namespace NewsParser
                 }
                 this.path = path;  
             }
-            // ВСЕГДА СОЗДАЁТ НОВЫЙ ФАЙЛ!!!
             public void write(string text)
             {
                 try

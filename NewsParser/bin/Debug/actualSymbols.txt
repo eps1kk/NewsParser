@@ -1,4 +1,0 @@
-JPY
-USD
-EUR
-RUB

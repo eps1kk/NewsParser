@@ -45,6 +45,43 @@ namespace NewsParser
             public string volatiled;
             public string time;
             public bool reverse = false;
+            public bool used = false;
+            public double getAct()
+            {
+                try
+                {
+                    actual.Replace(",", ".");
+                    return Double.Parse(this.actual);            
+                }
+                catch (Exception e)
+                {
+                    return Double.MaxValue;
+                }
+            }
+            public double getFore()
+            {
+                try
+                {
+                    forecast.Replace(",", ".");
+                    return Double.Parse(forecast);
+                } 
+                catch (Exception e)
+                {
+                    return Double.MaxValue;
+                }
+            }
+            public double getPrev()
+            {
+                try
+                {
+                    previous.Replace(",", ".");
+                    return Double.Parse(previous);
+                }
+                catch (Exception e)
+                {
+                    return Double.MaxValue;
+                }
+            }
         }
         class Filter
         {
@@ -206,7 +243,10 @@ namespace NewsParser
                     {
                         parserItem.previous = previousRegex.Match(item.Value).Value;
                     }
-                    parsedItems.Add(parserItem);
+                    if (parserItem.symbol != null && parserItem.time != null)
+                    {
+                        parsedItems.Add(parserItem);
+                    }
                     //Console.WriteLine(parserItem.symbol);
                 }
                 return cutParsedItems(parsedItems);
@@ -306,7 +346,7 @@ namespace NewsParser
         }
         class Decryptor
         {
-            public List<ParserItem> parsedItems = null;
+            public List<ParserItem> parsedItems = new List<ParserItem>();
             private List<ParserItem> highVolatile = new List<ParserItem>();
             private List<ParserItem> midVolatile = new List<ParserItem>();
             private List<ParserItem> lowVolatile = new List<ParserItem>();
@@ -319,13 +359,32 @@ namespace NewsParser
             
             private  void decryptParsedItems(List<ParserItem> news)
             {   
-                List<actualNewsItem> filterNewsItems = filter.getNews();
+                parsedItems.AddRange(highVolatile);
+                parsedItems.AddRange(midVolatile);
+                parsedItems.AddRange(lowVolatile);
+                List<actualNewsItem> filterNewsItems = filter.getNews();             
                 foreach (ParserItem parserItem in news)
                 {   
                     foreach (actualNewsItem filterItem in filterNewsItems)
                     {
                         if (parserItem.symbol.Contains(filterItem.symbol) && parserItem.news.Contains(filterItem.news))
-                        {
+                        {   
+                            if (filterItem.reverse)
+                            {
+                                parserItem.reverse = true;
+                            }
+                            bool found = false;
+                            foreach (ParserItem usedItem in parsedItems)
+                            {
+                                if (usedItem.symbol.Contains(parserItem.symbol) && usedItem.time.Contains(parserItem.time) && usedItem.news.Contains(parserItem.news))
+                                {
+                                    found = true;
+                                }
+                            }
+                            if (found)
+                            {
+                                continue;
+                            }
                             switch (filterItem.volatiled)
                             {
                                 case "High":
@@ -349,18 +408,30 @@ namespace NewsParser
             {
                 decryptParsedItems(news);
                 StringBuilder advise = new StringBuilder();
-                advise.Append(System.DateTime.Today.Day + "day\n");
+                string action;
                 foreach (ParserItem item in highVolatile)
                 {
-                    advise.Append(getHighVolatileAdvise(item) + "\n");
+                    action = getHighVolatileAdvise(item);
+                    if (action.Length > 0)
+                    {
+                        advise.Append(item.time + " " + item.symbol + " " + action + "\r\n");
+                    }
                 }
                 foreach (ParserItem item in midVolatile)
-                {
-                    advise.Append(getMidVolatileAdvise(item) + "\n");
+                {   
+                    action = getMidVolatileAdvise(item);
+                    if (action.Length > 0)
+                    {
+                        advise.Append(item.time + " " + item.symbol + " " + action + "\r\n");
+                    }
                 }
                 foreach (ParserItem item in lowVolatile)
                 {
-                    advise.Append(getLowVolatileAdvise(item) + "\n");
+                    action = getLowVolatileAdvise(item);
+                    if (action.Length > 0)
+                    {
+                        advise.Append(item.time + " " + item.symbol + " " + action + "\r\n");
+                    }
                 }
                 return advise.ToString();
             }
@@ -372,87 +443,86 @@ namespace NewsParser
             // Самая главная функция, основное распределение идет в ней !! 
             private string getMidVolatileAdvise(ParserItem item)
             {   
-                // НУЖНА ОПТИМИЗАЦИЯ (КАЖДЫЙ РАЗ ПАРСИМ ПО НОВОЙ)!!!
                 StringBuilder advise = new StringBuilder();
-                string prev = item.previous.Replace(",", ".");
-                double foreDouble = Double.MaxValue;
-                double actDouble;
-                string fore = item.forecast.Replace(",", ".");
-                string act = item.actual.Replace(",", ".");
-                string numberFormatPattern = "\\d+[\\.,]\\d*";           
-                Regex numberFormatRegex = new Regex(numberFormatPattern);
-                double prevDouble;
-                Double.TryParse(numberFormatRegex.Match(prev).Value, out prevDouble);
-                if (numberFormatRegex.Match(fore).Success && Double.TryParse(numberFormatRegex.Match(fore).Value,out foreDouble))
+                // Отдаёт распарсенные значения из ParserItem, если значения нет, присваивается - MAX_VALUE;
+                double prev = item.getPrev(); 
+                double act = item.getAct();
+                double fore = item.getFore();
+                if (item.used)
                 {
-                   if (prevDouble < foreDouble)
-                   {
-                       advise.Append("BUY ACTION MID\r\n");
-                   }
-                   else if (Math.Abs(prevDouble - foreDouble) < 0.0000001)
-                   {
-                       advise.Append("NO ACTION\r\n");
-                   }
-                   else
-                   {
-                       advise.Append("SELL ACTION MID\r\n");
-                   }
+                    return advise.ToString();
                 }
-                else
+                if (prev == Double.MaxValue)
                 {
-                    advise.Append("NO ACTION\r\n");
+                    return advise.ToString();
                 }
-                if (numberFormatRegex.Match(act).Success && Double.TryParse(numberFormatRegex.Match(act).Value, out actDouble))
+                if (act == Double.MaxValue)
                 {
-                    if (foreDouble == Double.MaxValue)
+                    return advise.ToString();
+                }
+                if (fore == Double.MaxValue)
+                {
+                    if (Math.Abs(act - prev) < 0.0000001)
                     {
-                        if (actDouble < foreDouble)
-                        {
-                            advise.Clear();
-                            advise.Append("SELL ACTION MID\r\n");
-                        }
-                        else if (Math.Abs(actDouble - foreDouble) < 0.0000001)
-                        {
-                            // заглушка
-                        }
-                        else
-                        {
-                            advise.Clear();
-                            advise.Append("BUY ACTION MID\r\n");
-                        }
+                        advise.Append("NO ACTION");
+                    }
+                    else if (act < prev)
+                    {
+                        advise.Append("SELL ACTION");
                     }
                     else
                     {
-                        if (actDouble < prevDouble)
+                        advise.Append("BUY ACTION");
+                    }
+                }
+                else
+                {
+                    if (Math.Abs(fore - act) < 0.0000001)
+                    {
+                        if (Math.Abs(act - prev) < 0.0000001)
                         {
-                            advise.Clear();
-                            advise.Append("SELL ACTION MID\r\n");
+                            advise.Append("NO ACTION");
                         }
-                        else if (Math.Abs(actDouble - prevDouble) < 0.0000001)
+                        else if (act < prev)
                         {
-                            advise.Clear();
-                            advise.Append("NO ACTION\r\n");
+                            advise.Append("SELL ACTION");
                         }
                         else
                         {
-                            advise.Clear();
-                            advise.Append("BUY ACTION MID\r\n");
+                            advise.Append("BUY ACTION");
                         }
+                    }
+                    else if (act < fore)
+                    {
+                        advise.Append("SELL ACTION");
+                    }
+                    else
+                    {
+                        advise.Append("BUY ACTION");
                     }
                 }
                 if (item.reverse)
                 {
-                    advise.Replace("BUY", "SELL");
-                    advise.Replace("SELL", "BUY");
+                    if (advise.ToString().Contains("BUY"))
+                    {
+                        advise.Replace("BUY", "SELL");
+                    }
+                    else if (advise.ToString().Contains("SELL"))
+                    {
+                        advise.Replace("SELL", "BUY");
+                    }
                 }
-                advise.Insert(0, item.time + " " + item.symbol + " " + item.news + " ");
-                return advise.ToString();
+                item.used = true;
+                return advise.ToString().Insert(0, "MID ");
             }
 
             private string getHighVolatileAdvise(ParserItem item)
             {
                 StringBuilder advise = new StringBuilder();
-                advise.Append(item.time + " " + item.symbol + " " + "NO ACTION\n");
+                if (!item.used)
+                {
+                    advise.Append("NO ACTION");
+                }
                 return advise.ToString();
             }
         }

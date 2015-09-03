@@ -1,0 +1,8 @@
+C:\Users\Виктор\Documents\GitHub\NewsParser\NewsParser\bin\Release\NewsParser.exe.config
+C:\Users\Виктор\Documents\GitHub\NewsParser\NewsParser\bin\Release\NewsParser.exe
+C:\Users\Виктор\Documents\GitHub\NewsParser\NewsParser\bin\Release\NewsParser.pdb
+C:\Users\Виктор\Documents\GitHub\NewsParser\NewsParser\obj\Release\NewsParser.Form1.resources
+C:\Users\Виктор\Documents\GitHub\NewsParser\NewsParser\obj\Release\NewsParser.Properties.Resources.resources
+C:\Users\Виктор\Documents\GitHub\NewsParser\NewsParser\obj\Release\NewsParser.csproj.GenerateResource.Cache
+C:\Users\Виктор\Documents\GitHub\NewsParser\NewsParser\obj\Release\NewsParser.exe
+C:\Users\Виктор\Documents\GitHub\NewsParser\NewsParser\obj\Release\NewsParser.pdb

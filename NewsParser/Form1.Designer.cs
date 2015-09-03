@@ -43,18 +43,19 @@
             this.midRadioButton = new System.Windows.Forms.RadioButton();
             this.highRadioButton = new System.Windows.Forms.RadioButton();
             this.button1 = new System.Windows.Forms.Button();
+            this.terminal_path = new System.Windows.Forms.TextBox();
+            this.button2 = new System.Windows.Forms.Button();
             this.volatileGroup.SuspendLayout();
             this.SuspendLayout();
             // 
             // exception_label
             // 
             this.exception_label.AutoSize = true;
-            this.exception_label.Location = new System.Drawing.Point(9, 253);
+            this.exception_label.Location = new System.Drawing.Point(17, 256);
             this.exception_label.Name = "exception_label";
-            this.exception_label.Size = new System.Drawing.Size(54, 13);
+            this.exception_label.Size = new System.Drawing.Size(127, 13);
             this.exception_label.TabIndex = 1;
-            this.exception_label.Text = "Exception";
-            this.exception_label.Visible = false;
+            this.exception_label.Text = "Директория терминала";
             // 
             // label2
             // 
@@ -193,11 +194,29 @@
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click_1);
             // 
+            // terminal_path
+            // 
+            this.terminal_path.Location = new System.Drawing.Point(173, 253);
+            this.terminal_path.Name = "terminal_path";
+            this.terminal_path.Size = new System.Drawing.Size(396, 20);
+            this.terminal_path.TabIndex = 19;
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(575, 251);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(28, 23);
+            this.button2.TabIndex = 20;
+            this.button2.Text = "ok";
+            this.button2.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(608, 275);
+            this.Controls.Add(this.button2);
+            this.Controls.Add(this.terminal_path);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.reverse_checkBox);
             this.Controls.Add(this.poolSymbolListBox);
@@ -237,6 +256,8 @@
         private System.Windows.Forms.RadioButton midRadioButton;
         private System.Windows.Forms.RadioButton highRadioButton;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.TextBox terminal_path;
+        private System.Windows.Forms.Button button2;
     }
 }
 

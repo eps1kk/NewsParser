@@ -73,7 +73,16 @@ namespace NewsParser
             midRadioButton.CheckedChanged += radioButton_CheckedChanged;
             lowRadioButton.CheckedChanged += radioButton_CheckedChanged;
             reverse_checkBox.CheckedChanged += reverse_checkBox_CheckedChanged;
-            
+            button2.Click += new_terminal_path; 
+        }
+
+        private void new_terminal_path(object sender, EventArgs e)
+        {
+            advisePath = terminal_path.Text;
+            if (!File.Exists(advisePath))
+            {
+                terminal_path.Text = "Неверный путь!";
+            }
         }
 
         private void ReadData()

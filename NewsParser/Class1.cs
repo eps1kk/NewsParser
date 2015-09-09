@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Net;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Timers;
 
 namespace NewsParser
 {
@@ -178,7 +179,7 @@ namespace NewsParser
             }
 
         }
-        class Parser
+        class Parser    
         {
             private string mItemPattern = "<tr id=\"eventRowId.+?</tr>";
             private string mNewsTimePattern = "<td class=\"first left time.+?</td>";
@@ -188,20 +189,19 @@ namespace NewsParser
             private string mActualPattern = "<td class=\"bold act.+?</td>";
             private string mForecastPattern = "<td class=\"fore event.+?</td>";
             private string mPreviousPattern = "<td class=\"prev blackFont.+?</td>";
-            private List<ParserItem> parsedItems = new List<ParserItem>();
+            public List<ParserItem> parsedItems = new List<ParserItem>();
             public Parser()
             {
 
             }
             public List<ParserItem> parse()
             {
-                // write parse this
+            // write parse this
                 string response = getHTMLresponse();
                 if (response == null)
-                    return parsedItems;
+                    return cutParsedItems(parsedItems);
                 if (parsedItems.Count > 0)
-                    return parsedItems;
-                //System.IO.File.WriteAllText(@"E:\test.txt", response);
+                    parsedItems.Clear();
                 RegexOptions regOptions = RegexOptions.Singleline;
                 Regex itemRegex = new Regex(mItemPattern,regOptions);
                 Regex newsTimeRegex = new Regex(mNewsTimePattern,regOptions);
@@ -212,8 +212,10 @@ namespace NewsParser
                 Regex forecastRegex = new Regex(mForecastPattern, regOptions);
                 Regex previousRegex = new Regex(mPreviousPattern, regOptions);
                 MatchCollection items = itemRegex.Matches(response);
+            File.WriteAllText("logw.txt", response);
+            Console.WriteLine(items.Count + " items(news Blocks)");
                 foreach(Match item in items)
-                {
+                { 
                     ParserItem parserItem = new ParserItem();
                     if (newsTimeRegex.IsMatch(item.Value))
                     {
@@ -247,13 +249,12 @@ namespace NewsParser
                     {
                         parsedItems.Add(parserItem);
                     }
-                    //Console.WriteLine(parserItem.symbol);
                 }
                 return cutParsedItems(parsedItems);
             }
 
             private List<ParserItem> cutParsedItems(List<ParserItem> parsedItems)
-            {   
+            {
                 List<ParserItem> cutParserItems = new List<ParserItem>();
                 foreach(ParserItem item in parsedItems)
                 {
@@ -311,7 +312,7 @@ namespace NewsParser
                 try
                 {
                     StringBuilder sB = new StringBuilder();
-                    string uri = "http://ru.investing.com";
+                    string uri = "http://ru.investing.com/economic-calendar";
                     byte[] buf = new byte[8192];
                     HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
                     request.Headers.Add(HttpRequestHeader.AcceptEncoding, "gzip.deflate,sdch");
@@ -334,6 +335,7 @@ namespace NewsParser
                             sB.Append(Encoding.UTF8.GetString(buf, 0, count));
                         }
                     } while (count > 0);
+                //File.WriteAllText("logw.txt", sB.ToString());
                     return sB.ToString();
                 }
                 catch (Exception exc)
@@ -358,7 +360,8 @@ namespace NewsParser
             }
             
             private  void decryptParsedItems(List<ParserItem> news)
-            {   
+            {
+                parsedItems.Clear();
                 parsedItems.AddRange(highVolatile);
                 parsedItems.AddRange(midVolatile);
                 parsedItems.AddRange(lowVolatile);
@@ -551,4 +554,127 @@ namespace NewsParser
                 }
             }
         }
+
+        class Activator
+    {
+        private Decryptor decryptor;
+        private Parser parser;
+        private Writer writer;
+        private System.Timers.Timer checkNewsTimer;
+        private List<ParserItem> currentNews = new List<ParserItem>();
+        //  Класс запуска советчика по времени выхода новостей
+        public Activator(Decryptor decryptor, Parser parser, Writer writer)    
+        {
+            this.decryptor = decryptor;
+            this.parser = parser;
+            this.writer = writer;
+            setTimer(parser.parse());
+        }
+
+        public void setTimer(List<ParserItem> parsedItems)
+        {
+            int td = int.MaxValue; // Разница между текущим временем и выходом новости
+            int currentTime = DateTime.Now.Hour*60 + DateTime.Now.Minute;
+            File.AppendAllText("log.txt", "Setting the timer " + currentTime);
+            int newsTime = int.MaxValue;
+            foreach (ParserItem item in parsedItems) // поиск ближайших новостей!
+            {
+                if (!item.used)
+                {
+                    newsTime = parseTime(item.time);
+                    if (td > newsTime - currentTime && newsTime - currentTime > 0)
+                    {
+                        currentNews.Clear();
+                        td = newsTime - currentTime;
+                        currentNews.Add(item);
+                    }
+                    else if (td == newsTime - currentTime)
+                    {
+                        currentNews.Add(item);
+                    }
+                }
+            }
+            if (td > 30)
+                td = 30;
+            checkNewsTimer = new System.Timers.Timer((td-1) * 60 * 1000);
+            checkNewsTimer.Elapsed += new System.Timers.ElapsedEventHandler(checkNews);
+        }
+
+        public void checkNews(object sender, ElapsedEventArgs e)
+        {   
+            checkNewsTimer.Stop();
+            checkNewsTimer.Dispose();
+            long currentTime = DateTime.Now.Second + DateTime.Now.Minute * 60 + DateTime.Now.Hour * 3600; // текущее время в секундах
+            long newsTime = parseTime(currentNews[0].time) * 60; // время новостей в секундах
+            if (newsTime - currentTime > 3)
+            {
+                checkNewsTimer = new Timer(newsTime - currentTime - 1);
+                checkNewsTimer.Elapsed += new ElapsedEventHandler(checkNews);
+            }
+            else if (currentTime - newsTime < 30)
+            {
+                if (checkActualNews(parser.parse()))
+                {
+                    setTimer(parser.parsedItems);
+                    writer.write(decryptor.getAdvises(currentNews));
+                    File.AppendAllText("log.txt", "advices sent " + DateTime.Now.ToShortDateString());
+                }
+                else
+                {
+                    checkNewsTimer = new Timer(2000);
+                    checkNewsTimer.Elapsed += new ElapsedEventHandler(checkNews);
+                }
+            }
+            else
+            {
+                setTimer(parser.parse());
+            }
+        }
+
+        private bool checkActualNews(List<ParserItem> list)
+        {
+            int counter = 0;
+            foreach (ParserItem item in list)
+            {
+                if (currentNews.Count == counter)
+                    return true;
+                foreach (ParserItem currentItem in currentNews)
+                {   
+                    // Проверка на соответствие символа, новости и времени
+                    if (currentItem.time.Equals(item.time) && currentItem.news.Contains(item.news) && currentItem.symbol.Contains(item.symbol))
+                    {
+                        if (existActual(item))
+                        {
+                            currentItem.actual = item.actual;
+                            counter++;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        private bool existActual(ParserItem item)
+        {
+            string actual = item.actual;
+            actual.Replace(",", ".");
+            try
+            {
+                Double.Parse(actual);
+                return true;
+            } catch (Exception exc)
+            {
+                return false;
+            }
+            return false;
+        }
+
+        private int parseTime(string time)
+        {
+            //throw new NotImplementedException();
+            string hour = time.Substring(0,time.IndexOf(":"));
+            string minute = time.Substring(time.IndexOf(":") + 1);
+            return int.Parse(hour) * 60 + int.Parse(minute);
+        }
+    }
 }

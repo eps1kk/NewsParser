@@ -6,3 +6,12 @@ C:\Users\Виктор\Documents\GitHub\NewsParser\NewsParser\obj\Release\NewsPar
 C:\Users\Виктор\Documents\GitHub\NewsParser\NewsParser\obj\Release\NewsParser.csproj.GenerateResource.Cache
 C:\Users\Виктор\Documents\GitHub\NewsParser\NewsParser\obj\Release\NewsParser.exe
 C:\Users\Виктор\Documents\GitHub\NewsParser\NewsParser\obj\Release\NewsParser.pdb
+C:\Users\epS\Documents\Visual Studio 2012\Projects\NewsParser\NewsParser\bin\Release\NewsParser.exe.config
+C:\Users\epS\Documents\Visual Studio 2012\Projects\NewsParser\NewsParser\obj\Release\NewsParser.exe
+C:\Users\epS\Documents\Visual Studio 2012\Projects\NewsParser\NewsParser\obj\Release\NewsParser.pdb
+C:\Users\epS\Documents\Visual Studio 2012\Projects\NewsParser\NewsParser\bin\Release\NewsParser.exe
+C:\Users\epS\Documents\Visual Studio 2012\Projects\NewsParser\NewsParser\bin\Release\NewsParser.pdb
+C:\Users\epS\Documents\Visual Studio 2012\Projects\NewsParser\NewsParser\obj\Release\NewsParser.csprojResolveAssemblyReference.cache
+C:\Users\epS\Documents\Visual Studio 2012\Projects\NewsParser\NewsParser\obj\Release\NewsParser.Form1.resources
+C:\Users\epS\Documents\Visual Studio 2012\Projects\NewsParser\NewsParser\obj\Release\NewsParser.Properties.Resources.resources
+C:\Users\epS\Documents\Visual Studio 2012\Projects\NewsParser\NewsParser\obj\Release\NewsParser.csproj.GenerateResource.Cache

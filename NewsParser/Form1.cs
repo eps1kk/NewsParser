@@ -22,6 +22,7 @@ namespace NewsParser
         private Parser parser;
         private Decryptor decryptor;
         private Writer writer;
+        private Activator activator;
         private string advisePath;
         private void onApplicationExit(object sender, EventArgs e)
         {   
@@ -60,10 +61,11 @@ namespace NewsParser
             parser = new Parser();
             decryptor = new Decryptor(filter);
             writer = new Writer(advisePath);
+            activator = new Activator(decryptor, parser, writer);
             ReadData(); 
             checkUpdates(null, null);
-            System.Timers.Timer updateTimer = new System.Timers.Timer(15 * 60 * 60 * 1000);
-            updateTimer.Elapsed += new System.Timers.ElapsedEventHandler(checkUpdates);  
+            //System.Timers.Timer updateTimer = new System.Timers.Timer(15 * 60 * 60 * 1000);
+            //updateTimer.Elapsed += new System.Timers.ElapsedEventHandler(checkUpdates);
             poolNewsListBox.DoubleClick += addActualNews;
             actualNewsListBox.DoubleClick += removeActualNews;
             actualNewsListBox.SelectedIndexChanged += newsListBox_SelectedIndexChanged;
@@ -96,7 +98,7 @@ namespace NewsParser
                 while (line != null)
                 {
                     actualNewsListBox.Items.Add(line);
-                    actualNewsItem item = new actualNewsItem(getNews(line), getVolatile(line), getReverse(line), getSymbol(line));
+                    //actualNewsItem item = new actualNewsItem(getNews(line), getVolatile(line), getReverse(line), getSymbol(line));
                     updateFilter(Actions.AddNews, line);
                     line = sr.ReadLine();
                 }
@@ -350,10 +352,11 @@ namespace NewsParser
             return "High";
         }
 
-        private void checkUpdates(Object source, ElapsedEventArgs e)
+        private void checkUpdates(object source, ElapsedEventArgs e)
         {
-            writer.write(decryptor.getAdvises(parser.parse()));            
-            foreach (ParserItem item in parser.parse())
+            List<ParserItem> list = parser.parse();
+            activator.setTimer(list);            
+            foreach (ParserItem item in list)
             {
                 if (!poolNewsListBox.Items.Contains(item.symbol + " | " + item.news))
                 {
